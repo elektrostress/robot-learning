@@ -109,39 +109,4 @@ print(round(prop.table(confValid$table,2),2))
 
 ## Out of sample error
 
-The expected out of sample error for this dataset is thus 0 (1-0.9981). However, I'm also interested in the performance of this model for future users of the devices. Therefore I want to test the performance while excluding one user from the training set.
-
-```{r, cache=TRUE, message=FALSE}
-# again remove the columns with over 80% NAs
-trainingWhole <- pml_training[,(which((colSums(is.na(pml_training)) / NROW(pml_training)) < .80))]
-
-# leave out one user (jeremy) of the original dataset
-datasetTrainUser = trainingWhole[trainingWhole$user_name %in% c("pedro", "adelmo", "charles", "eurico", "carlitos"),]
-testingUser = trainingWhole[trainingWhole$user_name %in% c("jeremy"),]
-
-# subset the training set for performance
-inTrain = createDataPartition(datasetTrainUser$classe, p = 0.10)[[1]]
-trainingUser = datasetTrainUser[inTrain,]
-
-# Train the model on all remaining users but one, in order to improve generalizability for new users 
-fit_on <-  list(rs1 = which(trainingUser$user_name!="charles"), rs2 = which(trainingUser$user_name!="pedro"), rs3 = which(trainingUser$user_name!="adelmo"), rs4 = which(trainingUser$user_name!="eurico"), rs5 = which(trainingUser$user_name!="carlitos"))
-pred_on <- list(rs1 = which(trainingUser$user_name=="charles"), rs2 = which(trainingUser$user_name=="pedro"), rs3 = which(trainingUser$user_name=="adelmo"), rs4 = which(trainingUser$user_name=="eurico"), rs5 = which(trainingUser$user_name=="carlitos"))
-
-# and remove the irrelevant values
-trainingUser <- trainingUser[,!(names(trainingUser) %in% c("user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "num_window"))]
-
-trainUserCtrl <- trainControl(method = "cv", 
-                     # here we define the samples (rather than let caret create k-fold sets)
-                     index= fit_on, indexOut = pred_on,
-                     verboseIter = FALSE,
-                     savePredictions = TRUE)
-
-modelFitUser <- train(classe~.,data=trainingUser,method="rf",
-                trControl=trainUserCtrl,
-                prox=TRUE,allowParallel=TRUE)
-
-confOverallUser <- confusionMatrix(testingUser$classe, predict(modelFitUser, testingUser))
-print(confOverallUser)
-# confusionmatrix 5x5
-print(round(prop.table(confOverallUser$table,2),2))
-```
+The expected out of sample error for this dataset is thus 0 (1-0.9981). This is, however, extremely low for a real life situation and one should interpret these results with caution.
